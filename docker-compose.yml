@@ -6,8 +6,8 @@ services:
       context: ./
       dockerfile: ./dockerfiles/Dockerfile
     ports:
-      - "8081:8081"
-      - "5081:5081"
+      - "5080:5080" # api
+      - "5081:5081" # mock
     environment:
       - MYSQL_USER=${MYSQL_USER}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
@@ -17,6 +17,14 @@ services:
     restart: on-failure
     depends_on:
       - mysql
+
+  web:
+    build:
+      context: ./
+      dockerfile: ./dockerfiles/Dockerfile.web
+    ports:
+      - "5050:50"
+    restart: on-failure
 
   mysql:
     image: mysql:8.0.40

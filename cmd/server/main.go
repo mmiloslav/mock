@@ -30,8 +30,8 @@ func main() {
 		}
 	}()
 
-	logger.Info("starting api router on port 8081...")
-	err = http.ListenAndServe(":8081", api.NewRouter())
+	logger.Info("starting api router on port 5080...")
+	err = http.ListenAndServe(":5080", api.NewRouter())
 	if err != nil {
 		logger.Errorf("failed to listen and serve api router with error [%s]", err.Error())
 		os.Exit(3)

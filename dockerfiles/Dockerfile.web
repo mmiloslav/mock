@@ -1,0 +1,9 @@
+# Use a lightweight web server
+FROM nginx:alpine
+
+# Copy the static content
+COPY web/ /usr/share/nginx/html
+COPY web/default.conf /etc/nginx/conf.d/default.conf
+
+# Expose port 50
+EXPOSE 50

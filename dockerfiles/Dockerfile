@@ -17,6 +17,6 @@ WORKDIR /app
 
 COPY --from=builder /app/main .
 
-EXPOSE 8081 5081
+EXPOSE 5080 5081
 
 ENTRYPOINT ["./main"]

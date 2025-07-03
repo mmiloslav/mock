@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Container</title>
+</head>
+<body>
+    <h1>Mock App</h1>
+    <div id="mocks-container"></div>
+
+    <script>
+        fetch('/api/v1/mocks')
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('mocks-container');
+                if (data.success && data.groups) {
+                    data.groups.forEach(group => {
+                        const groupDiv = document.createElement('div');
+                        groupDiv.innerHTML = `<h2>Group: ${group.name} (ID: ${group.id})</h2>`;
+                        container.appendChild(groupDiv);
+
+                        if (group.mocks && group.mocks.length > 0) {
+                            const mockList = document.createElement('ul');
+                            group.mocks.forEach(mock => {
+                                const mockItem = document.createElement('li');
+                                mockItem.innerHTML = `
+                                    <strong>Mock: ${mock.name} (ID: ${mock.id})</strong> - Active: ${mock.active} <br>
+                                    Request: ${mock.rq_method} ${mock.rq_path} <br>
+                                    Response Status: ${mock.rs_status}
+                                `;
+                                mockList.appendChild(mockItem);
+                            });
+                            groupDiv.appendChild(mockList);
+                        } else {
+                            groupDiv.innerHTML += '<p>No mocks in this group.</p>';
+                        }
+                    });
+                } else {
+                    container.innerHTML = '<p>Failed to load mocks.</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching mocks:', error);
+                const container = document.getElementById('mocks-container');
+                container.innerHTML = '<p>Error loading mocks. See console for details.</p>';
+            });
+    </script>
+</body>
+</html>
