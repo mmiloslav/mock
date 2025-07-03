@@ -4,6 +4,54 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web Container</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #0056b3;
+        }
+        #mocks-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        .group-container {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            width: 80%;
+            max-width: 800px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .group-container h2 {
+            margin-top: 0;
+            color: #0056b3;
+            border-bottom: 2px solid #0056b3;
+            padding-bottom: 10px;
+        }
+        .mocks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .mock-item {
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            padding: 15px;
+        }
+        .mock-item strong {
+            color: #003d80;
+        }
+    </style>
 </head>
 <body>
     <h1>Mock App</h1>
@@ -17,18 +65,41 @@
                 if (data.success && data.groups) {
                     data.groups.forEach(group => {
                         const groupDiv = document.createElement('div');
-                        groupDiv.innerHTML = `<h2>Group: ${group.name} (ID: ${group.id})</h2>`;
+                        groupDiv.className = 'group-container';
+                        groupDiv.innerHTML = `<h2>${group.name} (ID: ${group.id})</h2>`;
                         container.appendChild(groupDiv);
 
                         if (group.mocks && group.mocks.length > 0) {
-                            const mockList = document.createElement('ul');
+                            const mockList = document.createElement('div');
+                            mockList.className = 'mocks-list';
                             group.mocks.forEach(mock => {
-                                const mockItem = document.createElement('li');
-                                mockItem.innerHTML = `
-                                    <strong>Mock: ${mock.name} (ID: ${mock.id})</strong> - Active: ${mock.active} <br>
-                                    Request: ${mock.rq_method} ${mock.rq_path} <br>
-                                    Response Status: ${mock.rs_status}
-                                `;
+                                const mockItem = document.createElement('div');
+                                mockItem.className = 'mock-item';
+                                let mockContent = `
+                                    <strong>${mock.name} (ID: ${mock.id})</strong><br>
+                                    Active: ${mock.active} <br>
+                                    <br>
+                                    Request: ${mock.rq_method} ${mock.rq_path} <br>`;
+                               if (mock.rq_query_params && mock.rq_query_params.length > 0) {
+                                   mockContent += `Request query params: <br>`;
+                                   mock.rq_query_params.forEach(param => {
+                                       mockContent += `&nbsp;&nbsp;&nbsp;&nbsp;${param.key}: ${param.values.join(', ')} <br>`;
+                                   });
+                               }
+                                if (mock.rq_body) {
+                                    mockContent += `Request body: ${mock.rq_body} <br>`;
+                                }
+                                mockContent += `<br>Response Status: ${mock.rs_status} <br>`;
+                               if (mock.rs_headers && mock.rs_headers.length > 0) {
+                                   mockContent += `Response headers: <br>`;
+                                   mock.rs_headers.forEach(header => {
+                                       mockContent += `&nbsp;&nbsp;&nbsp;&nbsp;${header.key}: ${header.values.join(', ')} <br>`;
+                                   });
+                               }
+                                if (mock.rs_body) {
+                                    mockContent += `Response body: ${mock.rs_body} <br>`;
+                                }
+                                mockItem.innerHTML = mockContent;
                                 mockList.appendChild(mockItem);
                             });
                             groupDiv.appendChild(mockList);
