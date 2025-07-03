@@ -108,3 +108,12 @@ func (m *Mock) One() (bool, error) {
 
 	return true, nil
 }
+
+func MockExists(name string, groupID int) (bool, error) {
+	var count int64
+	err := mockDB.Model(&Mock{}).Where("name = ? AND group_id = ?", name, groupID).Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}

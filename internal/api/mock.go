@@ -241,6 +241,20 @@ func createMockHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ok, err = db.MockExists(rq.Name, rq.GroupID)
+	if err != nil {
+		logger.Errorf("failed to check if mock exists with error [%s]", err.Error())
+		rs.setError(myerrors.ErrInternal)
+		writeResponse(w, rs, http.StatusInternalServerError)
+		return
+	}
+	if ok {
+		logger.Errorf("mock with name [%s] already exists in group [%d]", rq.Name, rq.GroupID)
+		rs.setError(myerrors.ErrMockNameExists)
+		writeResponse(w, rs, http.StatusConflict)
+		return
+	}
+
 	queryParams, err := json.Marshal(maptool.UnsortJSONMap(rq.RqQueryParams))
 	if err != nil {
 		logger.Errorf("failed to marshal query params with error [%s]", err.Error())
