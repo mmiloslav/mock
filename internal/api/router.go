@@ -34,6 +34,7 @@ var routes = []route{
 	{Name: "Get Mocks", Method: http.MethodGet, Pattern: "/api/v1/mocks", HandlerFunc: getMocksHandler, MiddlewareAuthFunc: requestIDMiddleware},
 	{Name: "Create Mock", Method: http.MethodPost, Pattern: "/api/v1/mocks", HandlerFunc: createMockHandler, MiddlewareAuthFunc: requestIDMiddleware},
 	{Name: "Activate Mock", Method: http.MethodPatch, Pattern: "/api/v1/mocks/{mock_id}/activate", HandlerFunc: activateMockHandler, MiddlewareAuthFunc: requestIDMiddleware},
+	{Name: "Delete Mock", Method: http.MethodDelete, Pattern: "/api/v1/mocks/{mock_id}", HandlerFunc: deleteMockHandler, MiddlewareAuthFunc: requestIDMiddleware},
 
 	// GROUP
 	{Name: "Get Groups", Method: http.MethodGet, Pattern: "/api/v1/groups", HandlerFunc: getGroupsHandler, MiddlewareAuthFunc: requestIDMiddleware},

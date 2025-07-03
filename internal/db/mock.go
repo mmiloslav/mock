@@ -96,6 +96,10 @@ func (m *Mock) Update() error {
 	return mockDB.Save(m).Error
 }
 
+func (m *Mock) Delete() error {
+	return mockDB.Delete(m).Error
+}
+
 func (m *Mock) One() (bool, error) {
 	err := mockDB.Where(m).First(&m).Error
 	if err != nil {

@@ -338,3 +338,45 @@ func activateMockHandler(w http.ResponseWriter, r *http.Request) {
 	rs.setSuccess()
 	writeResponse(w, rs, http.StatusOK)
 }
+
+func deleteMockHandler(w http.ResponseWriter, r *http.Request) {
+	logger := mylog.Logger.WithField(requestIDKey, r.Context().Value(requestIDKey))
+	logger.Info("delete mock handler...")
+
+	rs := baseRS{}
+
+	vars := mux.Vars(r)
+	mockID, err := strconv.Atoi(vars["mock_id"])
+	if err != nil {
+		logger.Errorf("failed to convert mock_id with error [%s]", err.Error())
+		rs.setError(myerrors.ErrBadRequest)
+		writeResponse(w, rs, http.StatusBadRequest)
+		return
+	}
+
+	mockDB := db.Mock{ID: mockID}
+	ok, err := mockDB.One()
+	if err != nil {
+		logger.Errorf("failed to check if mock exists with error [%s]", err.Error())
+		rs.setError(myerrors.ErrInternal)
+		writeResponse(w, rs, http.StatusInternalServerError)
+		return
+	}
+	if !ok {
+		logger.Errorf("mock with id [%d] does not exist", mockID)
+		rs.setError(myerrors.ErrMockNotExists)
+		writeResponse(w, rs, http.StatusConflict)
+		return
+	}
+
+	err = mockDB.Delete()
+	if err != nil {
+		logger.Errorf("failed to delete mock with error [%s]", err.Error())
+		rs.setError(myerrors.ErrInternal)
+		writeResponse(w, rs, http.StatusInternalServerError)
+		return
+	}
+
+	rs.setSuccess()
+	writeResponse(w, rs, http.StatusOK)
+}
