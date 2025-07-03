@@ -47,9 +47,69 @@
             border: 1px solid #eee;
             border-radius: 4px;
             padding: 15px;
+            position: relative;
+            padding-bottom: 50px;
+        }
+        .mock-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         .mock-item strong {
             color: #003d80;
+        }
+        .delete-btn {
+            background-color: #ff6c61;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            position: absolute;
+            right: 15px;
+            bottom: 15px;
+        }
+        .delete-btn:hover {
+            background-color: #da190b;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 24px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:checked + .slider:before {
+            transform: translateX(16px);
         }
     </style>
 </head>
@@ -58,6 +118,44 @@
     <div id="mocks-container"></div>
 
     <script>
+        function toggleMock(mockId) {
+            fetch(`/api/v1/mocks/${mockId}/activate`, {
+                method: 'PATCH',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    console.error('Failed to toggle mock');
+                }
+            })
+            .catch(error => console.error('Error toggling mock:', error));
+        }
+
+        function deleteMock(mockId) {
+            if (!confirm('Are you sure you want to delete this mock?')) {
+                return;
+            }
+            fetch(`/api/v1/mocks/${mockId}`, {
+                method: 'DELETE',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const mockItem = document.querySelector(`.mock-item[data-mock-id='${mockId}']`);
+                    if (mockItem) {
+                        mockItem.remove();
+                    }
+                } else {
+                    console.error('Failed to delete mock');
+                    alert('Failed to delete mock.');
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting mock:', error)
+                alert('Error deleting mock.');
+            });
+        }
+ 
         fetch('/api/v1/mocks')
             .then(response => response.json())
             .then(data => {
@@ -75,30 +173,38 @@
                             group.mocks.forEach(mock => {
                                 const mockItem = document.createElement('div');
                                 mockItem.className = 'mock-item';
+                                mockItem.setAttribute('data-mock-id', mock.id);
+                                const checked = mock.active ? 'checked' : '';
                                 let mockContent = `
-                                    <strong>${mock.name} (ID: ${mock.id})</strong><br>
-                                    Active: ${mock.active} <br>
+                                    <div class="mock-item-header">
+                                        <strong>${mock.name} (ID: ${mock.id})</strong>
+                                       <label class="switch">
+                                           <input type="checkbox" ${checked} onchange="toggleMock(${mock.id})">
+                                           <span class="slider"></span>
+                                       </label>
+                                    </div>
                                     <br>
                                     Request: ${mock.rq_method} ${mock.rq_path} <br>`;
                                if (mock.rq_query_params && mock.rq_query_params.length > 0) {
-                                   mockContent += `Request query params: <br>`;
-                                   mock.rq_query_params.forEach(param => {
-                                       mockContent += `&nbsp;&nbsp;&nbsp;&nbsp;${param.key}: ${param.values.join(', ')} <br>`;
-                                   });
+                                  mockContent += `Request query params: <br>`;
+                                  mock.rq_query_params.forEach(param => {
+                                      mockContent += `&nbsp;&nbsp;&nbsp;&nbsp;${param.key}: ${param.values.join(', ')} <br>`;
+                                  });
                                }
                                 if (mock.rq_body) {
                                     mockContent += `Request body: ${mock.rq_body} <br>`;
                                 }
                                 mockContent += `<br>Response Status: ${mock.rs_status} <br>`;
                                if (mock.rs_headers && mock.rs_headers.length > 0) {
-                                   mockContent += `Response headers: <br>`;
-                                   mock.rs_headers.forEach(header => {
-                                       mockContent += `&nbsp;&nbsp;&nbsp;&nbsp;${header.key}: ${header.values.join(', ')} <br>`;
-                                   });
+                                  mockContent += `Response headers: <br>`;
+                                  mock.rs_headers.forEach(header => {
+                                      mockContent += `&nbsp;&nbsp;&nbsp;&nbsp;${header.key}: ${header.values.join(', ')} <br>`;
+                                  });
                                }
                                 if (mock.rs_body) {
                                     mockContent += `Response body: ${mock.rs_body} <br>`;
                                 }
+                                mockContent += `<button class="delete-btn" onclick="deleteMock(${mock.id})">&#x1F5D1;</button>`;
                                 mockItem.innerHTML = mockContent;
                                 mockList.appendChild(mockItem);
                             });
