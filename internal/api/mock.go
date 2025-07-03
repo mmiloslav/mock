@@ -2,13 +2,28 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/mmiloslav/mock/internal/db"
 	"github.com/mmiloslav/mock/internal/myerrors"
 	"github.com/mmiloslav/mock/internal/mylog"
 	"github.com/mmiloslav/mock/pkg/maptool"
+	"github.com/mmiloslav/mock/pkg/stringtool"
 )
+
+var validMethods = map[string]struct{}{
+	http.MethodGet:     {},
+	http.MethodHead:    {},
+	http.MethodPost:    {},
+	http.MethodPut:     {},
+	http.MethodPatch:   {},
+	http.MethodDelete:  {},
+	http.MethodConnect: {},
+	http.MethodOptions: {},
+	http.MethodTrace:   {},
+}
 
 type getMocksRS struct {
 	baseRS
@@ -103,4 +118,114 @@ func newMock(dbMock db.Mock) (Mock, error) {
 		RsHeaders:     maptool.SortJSONMap(rsHeaders),
 		RsBody:        dbMock.RsBody,
 	}, nil
+}
+
+type createMockRQ struct {
+	Name    string `json:"name"`
+	GroupID int    `json:"group_id"`
+
+	//RQ
+	RqMethod      string                  `json:"rq_method"`
+	RqPath        string                  `json:"rq_path"`
+	RqBody        string                  `json:"rq_body"`
+	RqQueryParams []maptool.SortedJSONMap `json:"rq_query_param"` // TODO
+
+	//RS
+	RsStatus  int                     `json:"rs_status"`
+	RsHeaders []maptool.SortedJSONMap `json:"rs_headers"` // TODO
+	RsBody    string                  `json:"rs_body"`
+}
+
+func (rq createMockRQ) Validate() error {
+	if stringtool.Empty(rq.Name) {
+		return errors.New("name is empty")
+	}
+
+	if rq.GroupID <= 0 {
+		return errors.New("groupID not valid")
+	}
+
+	// RQ
+	if stringtool.Empty(rq.RqMethod) {
+		return errors.New("rq method is empty")
+	}
+
+	if _, ok := validMethods[rq.RqMethod]; !ok {
+		return errors.New("rq method is not valid")
+	}
+
+	if stringtool.Empty(rq.RqPath) || !strings.HasPrefix(rq.RqPath, "/") {
+		return errors.New("rq path is empty")
+	}
+
+	//RS
+	if rq.RsStatus <= 0 {
+		return errors.New("rs status not valid")
+	}
+
+	return nil
+}
+
+type createMockRS struct {
+	baseRS
+	ID int `json:"id"`
+}
+
+func createMockHandler(w http.ResponseWriter, r *http.Request) {
+	logger := mylog.Logger.WithField(requestIDKey, r.Context().Value(requestIDKey))
+	logger.Info("create mock handler...")
+
+	rs := createMockRS{}
+	rq := createMockRQ{}
+	err := json.NewDecoder(r.Body).Decode(&rq)
+	if err != nil {
+		logger.Errorf("failed to decode request with error [%s]", err.Error())
+		rs.setError(myerrors.ErrBadRequest)
+		writeResponse(w, rs, http.StatusBadRequest)
+		return
+	}
+
+	err = rq.Validate()
+	if err != nil {
+		logger.Errorf("request is not valid: [%s]", err.Error())
+		rs.setError(myerrors.ErrBadRequest)
+		writeResponse(w, rs, http.StatusBadRequest)
+		return
+	}
+
+	ok, err := db.GroupExistsByID(rq.GroupID)
+	if err != nil {
+		logger.Errorf("failed to check if group exists with error [%s]", err.Error())
+		rs.setError(myerrors.ErrInternal)
+		writeResponse(w, rs, http.StatusInternalServerError)
+		return
+	}
+	if !ok {
+		logger.Errorf("group with id [%d] does not exist", rq.GroupID)
+		rs.setError(myerrors.ErrGroupNotExists)
+		writeResponse(w, rs, http.StatusConflict)
+		return
+	}
+
+	mock := db.Mock{
+		Name:     rq.Name,
+		Active:   true,
+		GroupID:  rq.GroupID,
+		RqMethod: rq.RqMethod,
+		RqPath:   rq.RqPath,
+		RqBody:   rq.RqBody,
+		RsStatus: rq.RsStatus,
+		RsBody:   rq.RsBody,
+	}
+	err = mock.Create()
+	if err != nil {
+		logger.Errorf("failed to create mock with error [%s]", err.Error())
+		rs.setError(myerrors.ErrInternal)
+		writeResponse(w, rs, http.StatusInternalServerError)
+		return
+	}
+
+	rs.ID = mock.ID
+	rs.setSuccess()
+	writeResponse(w, rs, http.StatusCreated)
 }

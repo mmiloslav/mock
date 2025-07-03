@@ -34,9 +34,20 @@ func (m *Group) Create() error {
 	return mockDB.Create(m).Error
 }
 
-func GroupExists(name string) (bool, error) {
+func GroupExistsByName(name string) (bool, error) {
 	group := Group{Name: name}
-	err := mockDB.Where(group).First(&group).Error
+
+	return group.exists()
+}
+
+func GroupExistsByID(id int) (bool, error) {
+	group := Group{ID: id}
+
+	return group.exists()
+}
+
+func (m Group) exists() (bool, error) {
+	err := mockDB.Where(m).First(&m).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return false, nil

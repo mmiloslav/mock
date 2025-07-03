@@ -87,3 +87,7 @@ func (m Mock) GetRsHeaders() (map[string][]string, error) {
 
 	return result, err
 }
+
+func (m *Mock) Create() error {
+	return mockDB.Create(m).Error
+}

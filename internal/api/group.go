@@ -83,7 +83,7 @@ func createGroupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ok, err := db.GroupExists(rq.Name)
+	ok, err := db.GroupExistsByName(rq.Name)
 	if err != nil {
 		logger.Errorf("failed to check if group already exists with error [%s]", err.Error())
 		rs.setError(myerrors.ErrInternal)
