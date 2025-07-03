@@ -19,7 +19,7 @@ type Mock struct {
 
 	// RQ
 	RqMethod      string `gorm:"not null"`
-	RqPath        string `gorm:"not null"` // TODO must start with /
+	RqPath        string `gorm:"not null"`
 	RqBody        string `gorm:"type:text"`
 	RqQueryParams datatypes.JSON
 
@@ -90,4 +90,21 @@ func (m Mock) GetRsHeaders() (map[string][]string, error) {
 
 func (m *Mock) Create() error {
 	return mockDB.Create(m).Error
+}
+
+func (m *Mock) Update() error {
+	return mockDB.Save(m).Error
+}
+
+func (m *Mock) One() (bool, error) {
+	err := mockDB.Where(m).First(&m).Error
+	if err != nil {
+		if err != gorm.ErrRecordNotFound {
+			return false, err
+		}
+
+		return false, nil
+	}
+
+	return true, nil
 }

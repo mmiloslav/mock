@@ -6,4 +6,5 @@ const (
 	ErrBadRequest         = "BAD_REQUEST"
 	ErrGroupAlreadyExists = "GROUP_ALREADY_EXISTS"
 	ErrGroupNotExists     = "GROUP_DOES_NOT_EXIST"
+	ErrMockNotExists      = "MOCK_DOES_NOT_EXIST"
 )

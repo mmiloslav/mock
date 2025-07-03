@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 
+	"github.com/gorilla/mux"
 	"github.com/mmiloslav/mock/internal/db"
 	"github.com/mmiloslav/mock/internal/myerrors"
 	"github.com/mmiloslav/mock/internal/mylog"
@@ -278,4 +280,47 @@ func createMockHandler(w http.ResponseWriter, r *http.Request) {
 	rs.ID = mock.ID
 	rs.setSuccess()
 	writeResponse(w, rs, http.StatusCreated)
+}
+
+func activateMockHandler(w http.ResponseWriter, r *http.Request) {
+	logger := mylog.Logger.WithField(requestIDKey, r.Context().Value(requestIDKey))
+	logger.Info("activate mock handler...")
+
+	rs := baseRS{}
+
+	vars := mux.Vars(r)
+	mockID, err := strconv.Atoi(vars["mock_id"])
+	if err != nil {
+		logger.Errorf("failed to convert mock_id with error [%s]", err.Error())
+		rs.setError(myerrors.ErrBadRequest)
+		writeResponse(w, rs, http.StatusBadRequest)
+		return
+	}
+
+	mockDB := db.Mock{ID: mockID}
+	ok, err := mockDB.One()
+	if err != nil {
+		logger.Errorf("failed to check if mock exists with error [%s]", err.Error())
+		rs.setError(myerrors.ErrInternal)
+		writeResponse(w, rs, http.StatusInternalServerError)
+		return
+	}
+	if !ok {
+		logger.Errorf("mock with id [%d] does not exist", mockID)
+		rs.setError(myerrors.ErrMockNotExists)
+		writeResponse(w, rs, http.StatusConflict)
+		return
+	}
+
+	mockDB.Active = !mockDB.Active
+	err = mockDB.Update()
+	if err != nil {
+		logger.Errorf("failed to activate mock with error [%s]", err.Error())
+		rs.setError(myerrors.ErrInternal)
+		writeResponse(w, rs, http.StatusInternalServerError)
+		return
+	}
+
+	rs.setSuccess()
+	writeResponse(w, rs, http.StatusOK)
 }
