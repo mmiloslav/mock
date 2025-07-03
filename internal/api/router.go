@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"strconv"
 
 	"encoding/json"
 
@@ -39,6 +40,7 @@ var routes = []route{
 	// GROUP
 	{Name: "Get Groups", Method: http.MethodGet, Pattern: "/api/v1/groups", HandlerFunc: getGroupsHandler, MiddlewareAuthFunc: requestIDMiddleware},
 	{Name: "Create Group", Method: http.MethodPost, Pattern: "/api/v1/groups", HandlerFunc: createGroupHandler, MiddlewareAuthFunc: requestIDMiddleware},
+	{Name: "Delete Group", Method: http.MethodDelete, Pattern: "/api/v1/groups/{group_id}", HandlerFunc: deleteGroupHandler, MiddlewareAuthFunc: requestIDMiddleware},
 }
 
 // newRouter creates mux.Router
@@ -117,4 +119,14 @@ func pingHandler(w http.ResponseWriter, r *http.Request) {
 
 	rs.setSuccess()
 	writeResponse(w, rs, http.StatusOK)
+}
+
+func getID(r *http.Request, key string) (int, error) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars[key])
+	if err != nil {
+		return 0, err
+	}
+
+	return id, nil
 }

@@ -4,16 +4,16 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"strconv"
 	"strings"
 
-	"github.com/gorilla/mux"
 	"github.com/mmiloslav/mock/internal/db"
 	"github.com/mmiloslav/mock/internal/myerrors"
 	"github.com/mmiloslav/mock/internal/mylog"
 	"github.com/mmiloslav/mock/pkg/maptool"
 	"github.com/mmiloslav/mock/pkg/stringtool"
 )
+
+const mockIDKey = "mock_id"
 
 var validMethods = map[string]struct{}{
 	http.MethodGet:     {},
@@ -302,10 +302,9 @@ func activateMockHandler(w http.ResponseWriter, r *http.Request) {
 
 	rs := baseRS{}
 
-	vars := mux.Vars(r)
-	mockID, err := strconv.Atoi(vars["mock_id"])
+	mockID, err := getID(r, mockIDKey)
 	if err != nil {
-		logger.Errorf("failed to convert mock_id with error [%s]", err.Error())
+		logger.Errorf("failed to get mock_id with error [%s]", err.Error())
 		rs.setError(myerrors.ErrBadRequest)
 		writeResponse(w, rs, http.StatusBadRequest)
 		return
@@ -345,10 +344,9 @@ func deleteMockHandler(w http.ResponseWriter, r *http.Request) {
 
 	rs := baseRS{}
 
-	vars := mux.Vars(r)
-	mockID, err := strconv.Atoi(vars["mock_id"])
+	mockID, err := getID(r, mockIDKey)
 	if err != nil {
-		logger.Errorf("failed to convert mock_id with error [%s]", err.Error())
+		logger.Errorf("failed to get mock_id with error [%s]", err.Error())
 		rs.setError(myerrors.ErrBadRequest)
 		writeResponse(w, rs, http.StatusBadRequest)
 		return

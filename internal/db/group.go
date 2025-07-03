@@ -34,6 +34,20 @@ func (m *Group) Create() error {
 	return mockDB.Create(m).Error
 }
 
+func (m *Group) Delete() error {
+	return mockDB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("group_id = ?", m.ID).Delete(&Mock{}).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Delete(m).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
 func GroupExistsByName(name string) (bool, error) {
 	group := Group{Name: name}
 

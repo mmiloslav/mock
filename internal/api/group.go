@@ -11,6 +11,8 @@ import (
 	"github.com/mmiloslav/mock/pkg/stringtool"
 )
 
+const groupIDKey = "group_id"
+
 type Group struct {
 	ID    int    `json:"id"`
 	Name  string `json:"name"`
@@ -133,6 +135,47 @@ func getGroupsHandler(w http.ResponseWriter, r *http.Request) {
 	rs.Groups, err = newGroups(dbGroups)
 	if err != nil {
 		logger.Errorf("failed to convert groups with error [%s]", err.Error())
+		rs.setError(myerrors.ErrInternal)
+		writeResponse(w, rs, http.StatusInternalServerError)
+		return
+	}
+
+	rs.setSuccess()
+	writeResponse(w, rs, http.StatusOK)
+}
+
+func deleteGroupHandler(w http.ResponseWriter, r *http.Request) {
+	logger := mylog.Logger.WithField(requestIDKey, r.Context().Value(requestIDKey))
+	logger.Info("delete group handler...")
+
+	rs := baseRS{}
+
+	groupID, err := getID(r, groupIDKey)
+	if err != nil {
+		logger.Errorf("failed to get group id with error [%s]", err.Error())
+		rs.setError(myerrors.ErrBadRequest)
+		writeResponse(w, rs, http.StatusBadRequest)
+		return
+	}
+
+	ok, err := db.GroupExistsByID(groupID)
+	if err != nil {
+		logger.Errorf("failed to check if group exists with error [%s]", err.Error())
+		rs.setError(myerrors.ErrInternal)
+		writeResponse(w, rs, http.StatusInternalServerError)
+		return
+	}
+	if !ok {
+		logger.Errorf("group with id [%d] does not exist", groupID)
+		rs.setError(myerrors.ErrGroupNotFound)
+		writeResponse(w, rs, http.StatusNotFound)
+		return
+	}
+
+	group := db.Group{ID: groupID}
+	err = group.Delete()
+	if err != nil {
+		logger.Errorf("failed to delete group with error [%s]", err.Error())
 		rs.setError(myerrors.ErrInternal)
 		writeResponse(w, rs, http.StatusInternalServerError)
 		return
