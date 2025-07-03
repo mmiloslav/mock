@@ -15,9 +15,14 @@ type Group struct {
 	DeletedAt gorm.DeletedAt
 }
 
-func GetGroups() ([]Group, error) {
+func GetGroups(preloadMocks bool) ([]Group, error) {
+	tx := mockDB
+	if preloadMocks {
+		tx = tx.Preload("Mocks")
+	}
+
 	var groups []Group
-	err := mockDB.Preload("Mocks").Order("name").Find(&groups).Error
+	err := tx.Order("name").Find(&groups).Error
 	if err != nil {
 		return nil, err
 	}

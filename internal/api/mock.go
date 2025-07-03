@@ -21,7 +21,7 @@ func getMocksHandler(w http.ResponseWriter, r *http.Request) {
 
 	rs := getMocksRS{}
 
-	dbGroups, err := db.GetGroups()
+	dbGroups, err := db.GetGroups(true)
 	if err != nil {
 		logger.Errorf("failed to get groups & mocks with error [%s]", err.Error())
 		rs.setError(myerrors.ErrInternal)

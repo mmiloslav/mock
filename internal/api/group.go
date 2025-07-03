@@ -110,3 +110,34 @@ func createGroupHandler(w http.ResponseWriter, r *http.Request) {
 	rs.setSuccess()
 	writeResponse(w, rs, http.StatusCreated)
 }
+
+type getGroupsRS struct {
+	baseRS
+	Groups []Group `json:"groups"`
+}
+
+func getGroupsHandler(w http.ResponseWriter, r *http.Request) {
+	logger := mylog.Logger.WithField(requestIDKey, r.Context().Value(requestIDKey))
+	logger.Info("get groups handler...")
+
+	rs := getGroupsRS{}
+
+	dbGroups, err := db.GetGroups(false)
+	if err != nil {
+		logger.Errorf("failed to get groups & mocks with error [%s]", err.Error())
+		rs.setError(myerrors.ErrInternal)
+		writeResponse(w, rs, http.StatusInternalServerError)
+		return
+	}
+
+	rs.Groups, err = newGroups(dbGroups)
+	if err != nil {
+		logger.Errorf("failed to convert groups with error [%s]", err.Error())
+		rs.setError(myerrors.ErrInternal)
+		writeResponse(w, rs, http.StatusInternalServerError)
+		return
+	}
+
+	rs.setSuccess()
+	writeResponse(w, rs, http.StatusOK)
+}
