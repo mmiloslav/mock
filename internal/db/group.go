@@ -24,3 +24,21 @@ func GetGroups() ([]Group, error) {
 
 	return groups, nil
 }
+
+func (m *Group) Create() error {
+	return mockDB.Create(m).Error
+}
+
+func GroupExists(name string) (bool, error) {
+	group := Group{Name: name}
+	err := mockDB.Where(group).First(&group).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return false, nil
+		}
+
+		return false, err
+	}
+
+	return true, nil
+}

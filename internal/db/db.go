@@ -51,7 +51,7 @@ func OpenConnection(logger *logrus.Entry) error {
 		return err
 	}
 
-	dsn = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4", cp.User, cp.Password, cp.Host, cp.Port, cp.DBName)
+	dsn = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=true", cp.User, cp.Password, cp.Host, cp.Port, cp.DBName)
 	mockDB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{DisableForeignKeyConstraintWhenMigrating: true})
 	if err != nil {
 		logger.Errorf("failed to open database with error [%s]", err.Error())

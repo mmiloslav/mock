@@ -1,7 +1,14 @@
 package api
 
 import (
+	"encoding/json"
+	"errors"
+	"net/http"
+
 	"github.com/mmiloslav/mock/internal/db"
+	"github.com/mmiloslav/mock/internal/myerrors"
+	"github.com/mmiloslav/mock/internal/mylog"
+	"github.com/mmiloslav/mock/pkg/stringtool"
 )
 
 type Group struct {
@@ -35,4 +42,71 @@ func newGroup(dbGroup db.Group) (Group, error) {
 		Name:  dbGroup.Name,
 		Mocks: mocks,
 	}, nil
+}
+
+type createGroupRQ struct {
+	Name string `json:"name"`
+}
+
+func (rq createGroupRQ) Validate() error {
+	if stringtool.Empty(rq.Name) {
+		return errors.New("name is empty")
+	}
+
+	return nil
+}
+
+type createGroupRS struct {
+	baseRS
+	ID int `json:"id"`
+}
+
+func createGroupHandler(w http.ResponseWriter, r *http.Request) {
+	logger := mylog.Logger.WithField(requestIDKey, r.Context().Value(requestIDKey))
+	logger.Info("create group handler...")
+
+	rs := createGroupRS{}
+	rq := createGroupRQ{}
+	err := json.NewDecoder(r.Body).Decode(&rq)
+	if err != nil {
+		logger.Errorf("failed to decode request with error [%s]", err.Error())
+		rs.setError(myerrors.ErrBadRequest)
+		writeResponse(w, rs, http.StatusBadRequest)
+		return
+	}
+
+	err = rq.Validate()
+	if err != nil {
+		logger.Errorf("request is not valid: [%s]", err.Error())
+		rs.setError(myerrors.ErrBadRequest)
+		writeResponse(w, rs, http.StatusBadRequest)
+		return
+	}
+
+	ok, err := db.GroupExists(rq.Name)
+	if err != nil {
+		logger.Errorf("failed to check if group already exists with error [%s]", err.Error())
+		rs.setError(myerrors.ErrInternal)
+		writeResponse(w, rs, http.StatusInternalServerError)
+		return
+	}
+	if ok {
+		logger.Errorf("group with name [%s] already exists", rq.Name)
+		rs.setError(myerrors.ErrGroupAlreadyExists)
+		writeResponse(w, rs, http.StatusConflict)
+		return
+	}
+
+	group := db.Group{Name: rq.Name}
+	err = group.Create()
+	if err != nil {
+		logger.Errorf("failed to create group with error [%s]", err.Error())
+		rs.setError(myerrors.ErrInternal)
+		writeResponse(w, rs, http.StatusInternalServerError)
+		return
+	}
+
+	rs.ID = group.ID
+	rs.setSuccess()
+	writeResponse(w, rs, http.StatusCreated)
 }

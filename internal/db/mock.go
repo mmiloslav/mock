@@ -15,7 +15,7 @@ type Mock struct {
 	Name    string `gorm:"not null"`
 	Active  bool   `gorm:"not null"`
 	GroupID int    `gorm:"not null"`
-	Group   Group  `gorm:"foreignKey:GroupID"`
+	Group   Group  `gorm:"not null;foreignKey:GroupID"`
 
 	// RQ
 	RqMethod      string `gorm:"not null"`

@@ -32,6 +32,9 @@ var routes = []route{
 
 	// MOCK
 	{Name: "Get Mocks", Method: http.MethodGet, Pattern: "/api/v1/mocks", HandlerFunc: getMocksHandler, MiddlewareAuthFunc: requestIDMiddleware},
+
+	// GROUP
+	{Name: "Create Group", Method: http.MethodPost, Pattern: "/api/v1/groups", HandlerFunc: createGroupHandler, MiddlewareAuthFunc: requestIDMiddleware},
 }
 
 // newRouter creates mux.Router

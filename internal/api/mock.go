@@ -24,7 +24,6 @@ func getMocksHandler(w http.ResponseWriter, r *http.Request) {
 	dbGroups, err := db.GetGroups()
 	if err != nil {
 		logger.Errorf("failed to get groups & mocks with error [%s]", err.Error())
-
 		rs.setError(myerrors.ErrInternal)
 		writeResponse(w, rs, http.StatusInternalServerError)
 		return
@@ -33,7 +32,6 @@ func getMocksHandler(w http.ResponseWriter, r *http.Request) {
 	rs.Groups, err = newGroups(dbGroups)
 	if err != nil {
 		logger.Errorf("failed to convert groups with error [%s]", err.Error())
-
 		rs.setError(myerrors.ErrInternal)
 		writeResponse(w, rs, http.StatusInternalServerError)
 		return
