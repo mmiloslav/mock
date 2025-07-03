@@ -29,3 +29,16 @@ func SortJSONMap(m map[string][]string) []SortedJSONMap {
 
 	return sorted
 }
+
+func UnsortJSONMap(s []SortedJSONMap) map[string][]string {
+	if len(s) == 0 {
+		return nil
+	}
+
+	m := make(map[string][]string, len(s))
+	for _, item := range s {
+		m[item.Key] = item.Values
+	}
+
+	return m
+}

@@ -128,11 +128,11 @@ type createMockRQ struct {
 	RqMethod      string                  `json:"rq_method"`
 	RqPath        string                  `json:"rq_path"`
 	RqBody        string                  `json:"rq_body"`
-	RqQueryParams []maptool.SortedJSONMap `json:"rq_query_param"` // TODO
+	RqQueryParams []maptool.SortedJSONMap `json:"rq_query_params"`
 
 	//RS
 	RsStatus  int                     `json:"rs_status"`
-	RsHeaders []maptool.SortedJSONMap `json:"rs_headers"` // TODO
+	RsHeaders []maptool.SortedJSONMap `json:"rs_headers"`
 	RsBody    string                  `json:"rs_body"`
 }
 
@@ -150,8 +150,26 @@ func (rq createMockRQ) Validate() error {
 		return errors.New("rq method is empty")
 	}
 
+	if rq.RqMethod == http.MethodGet && !stringtool.Empty(rq.RqBody) {
+		return errors.New("cannot add rq body for GET method")
+	}
+
 	if _, ok := validMethods[rq.RqMethod]; !ok {
 		return errors.New("rq method is not valid")
+	}
+
+	if len(rq.RqQueryParams) > 0 {
+		for _, qp := range rq.RqQueryParams {
+			if stringtool.Empty(qp.Key) {
+				return errors.New("query param is empty")
+			}
+
+			for _, v := range qp.Values {
+				if stringtool.Empty(v) {
+					return errors.New("query param value is empty")
+				}
+			}
+		}
 	}
 
 	if stringtool.Empty(rq.RqPath) || !strings.HasPrefix(rq.RqPath, "/") {
@@ -161,6 +179,20 @@ func (rq createMockRQ) Validate() error {
 	//RS
 	if rq.RsStatus <= 0 {
 		return errors.New("rs status not valid")
+	}
+
+	if len(rq.RsHeaders) > 0 {
+		for _, h := range rq.RsHeaders {
+			if stringtool.Empty(h.Key) {
+				return errors.New("header is empty")
+			}
+
+			for _, v := range h.Values {
+				if stringtool.Empty(v) {
+					return errors.New("header value is empty")
+				}
+			}
+		}
 	}
 
 	return nil
@@ -207,15 +239,33 @@ func createMockHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	queryParams, err := json.Marshal(maptool.UnsortJSONMap(rq.RqQueryParams))
+	if err != nil {
+		logger.Errorf("failed to marshal query params with error [%s]", err.Error())
+		rs.setError(myerrors.ErrInternal)
+		writeResponse(w, rs, http.StatusInternalServerError)
+		return
+	}
+
+	headers, err := json.Marshal(maptool.UnsortJSONMap(rq.RsHeaders))
+	if err != nil {
+		logger.Errorf("failed to marshal headers with error [%s]", err.Error())
+		rs.setError(myerrors.ErrInternal)
+		writeResponse(w, rs, http.StatusInternalServerError)
+		return
+	}
+
 	mock := db.Mock{
-		Name:     rq.Name,
-		Active:   true,
-		GroupID:  rq.GroupID,
-		RqMethod: rq.RqMethod,
-		RqPath:   rq.RqPath,
-		RqBody:   rq.RqBody,
-		RsStatus: rq.RsStatus,
-		RsBody:   rq.RsBody,
+		Name:          rq.Name,
+		Active:        true,
+		GroupID:       rq.GroupID,
+		RqMethod:      rq.RqMethod,
+		RqPath:        rq.RqPath,
+		RqBody:        rq.RqBody,
+		RqQueryParams: queryParams,
+		RsStatus:      rq.RsStatus,
+		RsHeaders:     headers,
+		RsBody:        rq.RsBody,
 	}
 	err = mock.Create()
 	if err != nil {
